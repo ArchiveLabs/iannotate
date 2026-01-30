@@ -34,43 +34,34 @@ def create_annotation(
 
 
 @app.get("/annotations", response_model=List[AnnotationResponse])
-def get_all_annotations(db: Session = Depends(get_db)):
-    annotations = db.query(Annotation).all()
-    return annotations
-
-
-@app.get("/annotations/by-uri", response_model=List[AnnotationResponse])
-def get_annotations_by_uri(
-    itemname: str,
-    subfile: Optional[str] = None,
+def get_annotations(
+    uri: Optional[str] = None,
+    openlibrary_work: Optional[str] = None,
+    openlibrary_edition: Optional[str] = None,
+    username: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    if subfile:
-        uri = f"https://archive.org/details/{itemname}/{subfile}"
-    else:
-        uri = f"https://archive.org/details/{itemname}"
+    """
+    Get annotations with optional filters.
     
-    annotations = db.query(Annotation).filter(Annotation.uri == uri).all()
-    return annotations
-
-
-@app.get("/annotations/by-work/{work_id}", response_model=List[AnnotationResponse])
-def get_annotations_by_work(
-    work_id: str,
-    db: Session = Depends(get_db)
-):
-    annotations = db.query(Annotation).filter(
-        Annotation.openlibrary_work == work_id
-    ).all()
-    return annotations
-
-
-@app.get("/annotations/by-edition/{edition_id}", response_model=List[AnnotationResponse])
-def get_annotations_by_edition(
-    edition_id: str,
-    db: Session = Depends(get_db)
-):
-    annotations = db.query(Annotation).filter(
-        Annotation.openlibrary_edition == edition_id
-    ).all()
+    Query parameters:
+    - uri: Filter by URI
+    - openlibrary_work: Filter by OpenLibrary work ID
+    - openlibrary_edition: Filter by OpenLibrary edition ID
+    - username: Filter by username
+    
+    If no filters are provided, returns all annotations.
+    """
+    query = db.query(Annotation)
+    
+    if uri:
+        query = query.filter(Annotation.uri == uri)
+    if openlibrary_work:
+        query = query.filter(Annotation.openlibrary_work == openlibrary_work)
+    if openlibrary_edition:
+        query = query.filter(Annotation.openlibrary_edition == openlibrary_edition)
+    if username:
+        query = query.filter(Annotation.username == username)
+    
+    annotations = query.all()
     return annotations
