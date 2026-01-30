@@ -40,7 +40,8 @@ def setup_database():
         # Delete all records from the annotations table
         db.execute(Base.metadata.tables['annotations'].delete())
         db.commit()
-    except:
+    except Exception:
+        # Ignore errors during cleanup (e.g., if table doesn't exist yet)
         pass
     finally:
         db.close()
