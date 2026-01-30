@@ -9,8 +9,8 @@ A minimal Python, FastAPI, Postgres, SQLAlchemy application for managing annotat
   - `username`: Username of the annotator
   - `uri`: e.g., "https://archive.org/details/itemname{/subfile}" (defines the item being annotated)
   - `annotation`: URL of the annotation
-  - `openlibrary_work`: Optional OpenLibrary work ID (integer)
-  - `openlibrary_edition`: Optional OpenLibrary edition ID (integer)
+  - `openlibrary_work`: Optional OpenLibrary work ID (string, e.g., "OL12345W")
+  - `openlibrary_edition`: Optional OpenLibrary edition ID (string, e.g., "OL12345M")
   - `comment`: Optional comment (string)
   - `private`: Boolean indicating if the annotation is private
 
@@ -45,7 +45,7 @@ curl -X POST "http://localhost:8000/annotations" \
     "username": "alice",
     "uri": "https://archive.org/details/item123",
     "annotation": "http://example.com/annotation/1",
-    "openlibrary_work": 12345,
+    "openlibrary_work": "OL12345W",
     "comment": "Interesting book",
     "private": false
   }'
@@ -58,7 +58,7 @@ curl "http://localhost:8000/annotations/by-uri?itemname=item123"
 
 Fetch annotations by OpenLibrary work ID:
 ```bash
-curl "http://localhost:8000/annotations/by-work/12345"
+curl "http://localhost:8000/annotations/by-work/OL12345W"
 ```
 
 ## Development

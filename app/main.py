@@ -1,17 +1,19 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from contextlib import asynccontextmanager
 from app.database import get_db, init_db
 from app.models import Annotation
 from app.schemas import AnnotationCreate, AnnotationResponse
-import re
-
-app = FastAPI(title="iAnnotate API", version="1.0.0")
 
 
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_db()
+    yield
+
+
+app = FastAPI(title="iAnnotate API", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/")
@@ -54,7 +56,7 @@ def get_annotations_by_uri(
 
 @app.get("/annotations/by-work/{work_id}", response_model=List[AnnotationResponse])
 def get_annotations_by_work(
-    work_id: int,
+    work_id: str,
     db: Session = Depends(get_db)
 ):
     annotations = db.query(Annotation).filter(
@@ -65,7 +67,7 @@ def get_annotations_by_work(
 
 @app.get("/annotations/by-edition/{edition_id}", response_model=List[AnnotationResponse])
 def get_annotations_by_edition(
-    edition_id: int,
+    edition_id: str,
     db: Session = Depends(get_db)
 ):
     annotations = db.query(Annotation).filter(
