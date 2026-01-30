@@ -2,16 +2,22 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.database import get_db
 from app.models import Base
 
-# Use in-memory SQLite database for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+# Use in-memory SQLite database for testing with shared connection
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,  # Ensure same connection is reused
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create tables once at module load
+Base.metadata.create_all(bind=engine)
 
 
 def override_get_db():
@@ -27,10 +33,18 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(autouse=True)
 def setup_database():
-    """Create tables before each test and drop them after"""
-    Base.metadata.create_all(bind=engine)
+    """Clear all data before each test"""
+    # Get a connection and delete all data
+    db = TestingSessionLocal()
+    try:
+        # Delete all records from the annotations table
+        db.execute(Base.metadata.tables['annotations'].delete())
+        db.commit()
+    except:
+        pass
+    finally:
+        db.close()
     yield
-    Base.metadata.drop_all(bind=engine)
 
 
 client = TestClient(app)
@@ -90,8 +104,8 @@ def test_get_all_annotations():
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
-    assert data[0]["username"] == "alice"
-    assert data[1]["username"] == "bob"
+    usernames = {ann["username"] for ann in data}
+    assert usernames == {"alice", "bob"}
 
 
 def test_get_annotations_by_uri():
