@@ -3,24 +3,9 @@ Internet Archive (W3C) Annotations Server
 
 A minimal Python, FastAPI, Postgres, SQLAlchemy application for managing annotations.
 
-## Features
+## Purpose
 
-- **Database Table**: `annotations` with the following columns:
-  - `username`: Username of the annotator
-  - `uri`: e.g., "https://archive.org/details/itemname{/subfile}" (defines the item being annotated)
-  - `annotation`: URL of the annotation
-  - `openlibrary_work`: Optional OpenLibrary work ID (string, e.g., "OL12345W")
-  - `openlibrary_edition`: Optional OpenLibrary edition ID (string, e.g., "OL12345M")
-  - `comment`: Optional comment (string)
-  - `private`: Boolean indicating if the annotation is private
-
-## API Endpoints
-
-- `POST /annotations`: Create a new annotation
-- `GET /annotations`: Fetch all annotations
-- `GET /annotations/by-uri`: Fetch annotations by itemname and optional subfile
-- `GET /annotations/by-work/{work_id}`: Fetch annotations by OpenLibrary work ID
-- `GET /annotations/by-edition/{edition_id}`: Fetch annotations by OpenLibrary edition ID
+This service provides a RESTful API for storing and retrieving annotations associated with Internet Archive items and OpenLibrary works/editions. It supports filtering annotations by URI, OpenLibrary work/edition IDs, and username.
 
 ## Quick Start
 
@@ -35,7 +20,21 @@ docker-compose up --build
 
 3. View API documentation at http://localhost:8000/docs
 
-### Example API Usage
+## API Endpoints
+
+### Create Annotation
+- `POST /annotations`: Create a new annotation
+
+### Get Annotations
+- `GET /annotations`: Fetch all annotations or filter using query parameters:
+  - `?uri={uri}`: Filter by URI
+  - `?openlibrary_work={work_id}`: Filter by OpenLibrary work ID
+  - `?openlibrary_edition={edition_id}`: Filter by OpenLibrary edition ID
+  - `?username={username}`: Filter by username
+  
+Query parameters can be combined to filter by multiple criteria.
+
+### Example Usage
 
 Create an annotation:
 ```bash
@@ -51,22 +50,55 @@ curl -X POST "http://localhost:8000/annotations" \
   }'
 ```
 
+Fetch all annotations:
+```bash
+curl "http://localhost:8000/annotations"
+```
+
 Fetch annotations by URI:
 ```bash
-curl "http://localhost:8000/annotations/by-uri?itemname=item123"
+curl "http://localhost:8000/annotations?uri=https://archive.org/details/item123"
 ```
 
 Fetch annotations by OpenLibrary work ID:
 ```bash
-curl "http://localhost:8000/annotations/by-work/OL12345W"
+curl "http://localhost:8000/annotations?openlibrary_work=OL12345W"
+```
+
+Fetch annotations by username:
+```bash
+curl "http://localhost:8000/annotations?username=alice"
+```
+
+Fetch with multiple filters:
+```bash
+curl "http://localhost:8000/annotations?username=alice&openlibrary_work=OL12345W"
+```
+
+## Running Tests
+
+Install test dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+Run the test suite:
+```bash
+pytest
+```
+
+Run tests with verbose output:
+```bash
+pytest -v
 ```
 
 ## Development
 
 ### Requirements
 
-- Docker and Docker Compose
+- Docker and Docker Compose (recommended)
 - Python 3.11+ (for local development)
+- PostgreSQL (for local development without Docker)
 
 ### Local Development Without Docker
 
