@@ -8,7 +8,13 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres:postgres@db:5432/iannotate"
 )
 
-engine = create_engine(DATABASE_URL)
+# SQLite needs check_same_thread=False so the connection can be shared across
+# the threadpool FastAPI uses to serve requests. No-op for other backends.
+connect_args = (
+    {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+)
+
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
