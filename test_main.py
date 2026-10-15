@@ -298,3 +298,86 @@ def test_empty_result_set():
     assert response.status_code == 200
     data = response.json()
     assert data == []
+
+
+# --- views, timestamps, sorting, PUT, DELETE ---
+
+def _make(annotation, username="u", uri="https://archive.org/details/x"):
+    return client.post(
+        "/annotations",
+        json={"username": username, "uri": uri, "annotation": annotation},
+    ).json()
+
+
+def test_create_sets_views_and_timestamps():
+    data = _make("https://ol/s/a")
+    assert data["views"] == 0
+    assert data["created_date"] is not None
+    assert data["last_modified_date"] is not None
+
+
+def test_put_increments_views():
+    _make("https://ol/s/a")
+    for expected in (1, 2, 3):
+        r = client.put("/annotations", params={"annotation": "https://ol/s/a"})
+        assert r.status_code == 200
+        assert r.json()["views"] == expected
+
+
+def test_put_sets_explicit_views():
+    _make("https://ol/s/a")
+    r = client.put("/annotations", params={"annotation": "https://ol/s/a", "views": 99})
+    assert r.status_code == 200
+    assert r.json()["views"] == 99
+
+
+def test_put_missing_annotation_404():
+    r = client.put("/annotations", params={"annotation": "https://ol/s/nope"})
+    assert r.status_code == 404
+
+
+def test_sort_by_views():
+    _make("https://ol/s/a")
+    _make("https://ol/s/b")
+    for _ in range(3):
+        client.put("/annotations", params={"annotation": "https://ol/s/b"})
+    client.put("/annotations", params={"annotation": "https://ol/s/a"})
+
+    desc = client.get("/annotations", params={"sort_by": "views", "order": "desc"}).json()
+    assert [r["annotation"] for r in desc] == ["https://ol/s/b", "https://ol/s/a"]
+
+    asc = client.get("/annotations", params={"sort_by": "views", "order": "asc"}).json()
+    assert [r["annotation"] for r in asc] == ["https://ol/s/a", "https://ol/s/b"]
+
+
+def test_sort_by_created_date():
+    _make("https://ol/s/a")
+    _make("https://ol/s/b")
+    r = client.get("/annotations", params={"sort_by": "created_date", "order": "asc"})
+    assert r.status_code == 200
+    assert [x["annotation"] for x in r.json()] == ["https://ol/s/a", "https://ol/s/b"]
+
+
+def test_delete_by_annotation_url():
+    _make("https://ol/s/a")
+    r = client.delete("/annotations", params={"annotation": "https://ol/s/a"})
+    assert r.status_code == 200
+    assert r.json()["deleted"] is True
+    assert client.get("/annotations").json() == []
+
+
+def test_delete_by_id():
+    created = _make("https://ol/s/a")
+    r = client.delete("/annotations", params={"id": created["id"]})
+    assert r.status_code == 200
+    assert client.get("/annotations").json() == []
+
+
+def test_delete_missing_404():
+    r = client.delete("/annotations", params={"annotation": "https://ol/s/nope"})
+    assert r.status_code == 404
+
+
+def test_delete_requires_a_selector():
+    r = client.delete("/annotations")
+    assert r.status_code == 400
