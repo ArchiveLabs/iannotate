@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 
 class AnnotationCreate(BaseModel):
@@ -21,6 +22,9 @@ class AnnotationResponse(BaseModel):
     openlibrary_edition: Optional[str] = None
     comment: Optional[str] = None
     private: bool
+    views: int
+    created_date: datetime
+    last_modified_date: datetime
 
     class Config:
         from_attributes = True
