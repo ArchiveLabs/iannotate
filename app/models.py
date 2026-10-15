@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -15,3 +15,13 @@ class Annotation(Base):
     openlibrary_edition = Column(String, nullable=True, index=True)
     comment = Column(String, nullable=True)
     private = Column(Boolean, nullable=False, default=False)
+    views = Column(Integer, nullable=False, default=0, server_default="0")
+    created_date = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    last_modified_date = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
